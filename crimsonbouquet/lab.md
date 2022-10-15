@@ -57,7 +57,9 @@ In essence, any url is first passed to crimsonbouquet/urls.py. It matches agains
 
 ## Building models and migrating
 
-Models are the most important part of this lesson, because views and templates are essentially no longer used in the existing codebase.
+Models are the most important part of this lesson, because views and templates are essentially no longer used in the existing codebase. 
+
+Paste the following code into `content/models.py'.
 
 ```python
 from django.db import models
@@ -184,21 +186,23 @@ python manage.py migrate
 
 ## Testing the built in API
 
-We can run `python manage.py shell` to play with some objects. Do so and run the following lines.
+We can run `python manage.py shell` to play with some objects. This opens up an interactive session. In it, we'll run some lines, and you should get the same output.
 
-Let's first create a Contributor. This is done as follows. Note that after they are created, they are given an id, which is not even a field we specified when creating the model.
+Let's first create a Contributor. This is done as follows. Note that after they are created, they are given an id, which is not even a field we specified when creating the model. 
 ```pycon
 >>> from content.models import Contributor, Article
 >>> c = Contributor(first_name = "Hu", last_name = "Tao")
->>> c.save()
->>> c.id
-1
 >>> c
 <Contributor: Hu Tao>
 >>> Contributor.objects.all()
+<QuerySet []>
+>>> c.save()
+>>> c.id
+1
+>>> Contributor.objects.all()
 <QuerySet [<Contributor: Hu Tao>]>
 ```
-The above begins to show how we are able to query different models. We just asked for every `Contributor` model currently in the database.
+The above begins to show how we are able to query different models. We just asked for every `Contributor` model currently in the database. For any model, we're able to access all the objects using `[class_name].objects.all()`. Instead of `.all()`, there are other commands we can use to filter down these objects, which we'll learn later.
 
 Let's now create an article:
 ```pycon
@@ -212,7 +216,7 @@ Let's now create an article:
 >>> c.content.all()
 <QuerySet [<Article: How to Consistently VV Vape>]>
 ```
-We just created an article and added to its contributors the contributor we just created. You can see that this is now able to be seen in the database in two ways: our contributor is in the `contributor` set of the article, and the article is in the `content` set of the contributor. The reason it is called `content` from the Contributor side is because we set `related_name = "content"` earlier. 
+We just created an article and added to its contributors the contributor we just created. You can see that this is now able to be seen in the database in two ways: our contributor is in the `contributor` set of the article, and the article is in the `content` set of the contributor. The reason it is called `content` from the Contributor side is because we set `related_name = "content"` earlier. This is the same way it is set up in the Crimson's database. 
 
 Let's create a second article:
 ```pycon
@@ -224,12 +228,14 @@ Let's create a second article:
 >>> a2.contributors.all()
 <QuerySet [<Contributor: Hu Tao>]>
 ```
-Here, we've now added the relation from the other side - before we added a contributor to an article, and now we've added an article to a contributor.
+Here, we've now added the relation from the other side - before we added a contributor to an article, and now we've added an article to a contributor. Note that the effect is exactly the same.
 
 We can even create contributors directly from articles:
 ```pycon
 >>> a2.contributors.create(first_name = "Xing", last_name = "Qiu")
 >>> a2.contributors.all()
+<QuerySet [<Contributor: Hu Tao>, <Contributor: Xing Qiu>]>
+>>> Contributor.objects.all()
 <QuerySet [<Contributor: Hu Tao>, <Contributor: Xing Qiu>]>
 ```
 
@@ -237,9 +243,11 @@ Playing around with the actual Crimson database is pretty fun. We'll get access 
 
 ## Dealing with admin
 
+You can now quit out of the django interactive shell. We'll now be working with the Django admin, which is the way staff at the Crimson upload articles and set layouts for the website.
+
 We need to first create a super user. Run `python manage.py createsuperuser`. Set its credentials to whatever you want, but remember them.
 
-Change `content/admin.py`. This tells Django to display these two models in the admin:
+Change `content/admin.py` to be the following. This tells Django to display these two models in the admin:
 ```python
 from django.contrib import admin
 
@@ -253,9 +261,9 @@ admin.site.register(Article)
 
 Go to admin at `localhost:8000/admin`. Remember to boot the server back up if you closed it!
 
-We can now edit our objects here. Click on Articles and go capitalize the "g" in gamechanging!
+We can now edit our objects here, interactively instead of through the shell. Click on Articles and go capitalize the "g" in gamechanging!
 
-We are now going to write some more complicated views. This part isn't important to understand because views and templates are no longer used. The templates already exist in the code, we just have to modify `content/views.py`.
+We are now going to write some more complicated views. This part isn't important to understand because views and templates are no longer used. The templates already exist in the code, we just have to modify `content/views.py` to be the following:
 ```python
 from django.shortcuts import render, get_object_or_404
 
@@ -334,7 +342,7 @@ class Query(graphene.ObjectType):
 schema = graphene.Schema(query=Query)
 ```
 
-**!! In `settings.py`, uncomment the settings for GRAPHENE, and also uncomment the line in `urls.py` that has GraphQL in it. !!**
+**!! In `crimsonbouquet/settings.py`, uncomment the settings for GRAPHENE, and also uncomment the line in `crimsonbouquet/urls.py` that has GraphQL in it. !!**
 
 The `schema.py` file essentially is telling GraphQL the underlying representation of the data we already have stored, and how to respond when certain things are queried of it. 
 Let's discuss what's going on here. 
@@ -415,8 +423,8 @@ query {
 We ask for all the existing content pieces; each one comes with a set of contributors, and we can then ask for their first and last names. 
 
 As a submission, answer the following two questions. 
-- How would you design a query that, given a contributor's id, tells you the titles of the content that they've written.
-- Given an article's slug, give the first and last name of the authors that wrote it.
+- How would you design a query that, given a contributor's id, tells you the titles of the content that they've written? As an example, give me the query that would tell which articles the contributor with id `1` has written.
+- Given an article's slug, give the first and last name of the authors that wrote it. As an example, give me the query that would tell me who wrote the article with slug `"why yelan is gamechanging"`. (spoiler alert: she wasn't really)
 
 
 For fun, are the commands I used to generate the sample data. It can tell you some more about using the API. 
